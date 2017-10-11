@@ -3,7 +3,7 @@
 $apiURL = "API_URL_HERE";
 $apiKey = "API_KEY_HERE";
 
-$p = new PulseApi($apiURL, $apiKey);
+$p = new \PulseApi\PulseApi($apiURL, $apiKey);
 
 $contact = [
 	//'id'            => 1000,
