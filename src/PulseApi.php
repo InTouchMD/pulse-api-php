@@ -42,6 +42,34 @@ class PulseApi
 		return $this->request('GET', 'contact/'.$id, []);
 	}
 
+	/**
+	* Search contacts by a condition.
+	*
+	* The $condition parameter must be in the following format:
+	*
+	* [
+	*     'field'        => 'firstname',  (other examples: gender, Contact.lastname, ContactFields.custom_field, Email.email_address)
+	*     'value'        => 'Test'
+	*     'search_type'  => 'numeric',
+	*     'match_types'  => 'contains',
+	* ]
+	*
+	* Basic Search/Match Types:
+	* numeric: equals | greater_than | less_than | in_list | not_in_list
+	* text: contains | begins_with | ends_with | is | is blank | in_list | not_in_list
+	* boolean: is
+	* date: 'before | after | is
+	*
+	* For special search/match types/conditions speak with the Pulse support team for more information.
+	*
+	* @param mixed $condition
+	*/
+	public function searchContactsByCondition($condition)
+	{
+		$args = ['condition' => $condition];
+		return $this->request('GET', 'contact/searchByCustomCondition', $args);
+	}
+
 	public function saveFullContact($contact, $emails = false, $locations = false, $phones = false, $faxes = false)
 	{
 		$args = $contact;
@@ -131,7 +159,7 @@ class PulseApi
 			}
 			else
 			{
-				return $response;
+				return $response['body'];
 			}
 		}
 		else
