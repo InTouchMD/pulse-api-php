@@ -132,11 +132,8 @@ class PulseApi
 
 			if($method == 'POST')
 			{
-				var_dump($args);
 				curl_setopt($handle, CURLOPT_POST, 1);
 				curl_setopt($handle, CURLOPT_POSTFIELDS, http_build_query($args));
-
-				var_dump(http_build_query($args));
 			}
 
 			$response = curl_exec($handle);
