@@ -66,7 +66,12 @@ class PulseApi
 	*/
 	public function searchContactsByCondition($condition)
 	{
-		$args = ['condition' => $condition];
+		$args = [
+			'condition'    => $condition,
+			'_children'    => true,
+			'_unique'      => true,
+			'_dont_cache'  => true,
+		];
 		return $this->request('GET', 'contact/searchByCustomCondition', $args);
 	}
 
