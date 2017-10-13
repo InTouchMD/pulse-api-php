@@ -187,6 +187,12 @@ class PulseApi
 	}
 
 
+	/**
+	* Returns contact data based on an email address
+	*
+	* @param mixed $emailAddress
+	* @param mixed $withChildren
+	*/
 	public function getContactByEmail($emailAddress, $withChildren = false)
 	{
 		$search = [
@@ -200,7 +206,12 @@ class PulseApi
 		return $this->searchContactsByCondition($search, ['_children' => $withChildren]);
 	}
 
-
+	/**
+	* Gets email model data from an email address
+	*
+	* @param mixed $emailAddress
+	* @param mixed $withChildren
+	*/
 	public function getEmail($emailAddress, $withChildren = false)
 	{
 		$args = [
@@ -218,6 +229,13 @@ class PulseApi
 		return false;
 	}
 
+	/**
+	* Checks to see if an email address is on a specific list
+	*
+	* @param mixed $listID
+	* @param mixed $emailAddress
+	*
+	*/
 	public function isEmailOnList($listID, $emailAddress)
 	{
 
@@ -249,6 +267,16 @@ class PulseApi
 
 	}
 
+	/**
+	* Unsubscribes an email address from a specific list
+	*
+	* If the email address is not on the list, it will add them and mark them unsubscribed
+	*
+	* @param mixed $emailAddress
+	* @param mixed $contactID
+	* @param mixed $reason
+	* @param mixed $listID
+	*/
 	public function unsubscribeEmail($emailAddress, $contactID, $reason = "", $listID = 1)
 	{
 		$unsubscribed = false;
@@ -329,6 +357,13 @@ class PulseApi
 
 	}
 
+	/**
+	* Saves an email address
+	*
+	* @param mixed $emailAddress
+	* @param mixed $contactID
+	* @param mixed $emailID (optional)
+	*/
 	public function saveEmail($emailAddress, $contactID, $emailID = false)
 	{
 		$emailDomain = explode("@", $emailAddress);
