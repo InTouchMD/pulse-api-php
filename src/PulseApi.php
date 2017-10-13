@@ -126,6 +126,8 @@ class PulseApi
 
 		if($handle = curl_init($url))
 		{
+			$this->errors = [];
+
 			curl_setopt_array($handle, [
 				CURLOPT_RETURNTRANSFER => 1,
 				CURLOPT_HTTPHEADER => [
