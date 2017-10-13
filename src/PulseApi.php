@@ -318,7 +318,7 @@ class PulseApi
 				// On list with oppsite status
 				$saveListSubscription['id'] 		= $pulseListSubscription['id'];
 				$saveListSubscription['model_id'] 	= $pulseListSubscription['model_id'];
-				$this->request('post', 'list_subscription', $saveListSubscription);
+				$this->save('list_subscription', $saveListSubscription);
 				if(!$this->errors())
 				{
 					$addedToList = true;
@@ -342,7 +342,7 @@ class PulseApi
 				if($email = $this->saveEmail($emailAddress, $contactID))
 				{
 					$saveListSubscription['model_id'] = $email['id'];
-					$saveToList = $this->request('post', 'list_subscription', $saveListSubscription);
+					$saveToList = $this->save('list_subscription', $saveListSubscription);
 					if(!$this->errors())
 					{
 						$addedToList = true;
@@ -360,7 +360,7 @@ class PulseApi
 			{
 				$saveListSubscription['model_id'] = $email['id'];
 
-				$saveToList = $this->request('POST', 'list_subscription', $saveListSubscription);
+				$saveToList = $this->save('list_subscription', $saveListSubscription);
 				if(!$this->errors())
 				{
 					$addedToList = true;
@@ -409,7 +409,7 @@ class PulseApi
 				$args['id'] = $emailID;
 			}
 
-			$savedEmail = $this->request('post', 'email', $args);
+			$savedEmail = $this->save('email', $args);
 
 			if(!$this->errors())
 			{
@@ -419,4 +419,10 @@ class PulseApi
 
 		return false;
 	}
+
+	public function save($model, $args)
+	{
+		return $this->request('POST', $model, $args);
+	}
+
 }
