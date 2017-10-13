@@ -273,50 +273,61 @@ class PulseApi
 
 	}
 
-	/**
-	* Unsubscribes an email address from a specific list
-	*
-	* If the email address is not on the list, it will add them and mark them unsubscribed
-	*
-	* @param mixed $emailAddress
-	* @param mixed $contactID
-	* @param mixed $reason
-	* @param mixed $listID
-	*/
-	public function unsubscribeEmail($emailAddress, $contactID, $reason = "", $listID = 1)
-	{
-		$unsubscribed = false;
 
-		// Default unsubscribe values
+	/**
+	* Adds an email address to a specific list
+	*
+	* If the email address is not on the list, it will add them and mark them
+	* subscribed or unsubscribed based on the $subscribe parameter
+	*
+	* @param string $emailAddress
+	* @param int $contactID
+	* @param int $listID
+	* @param bool $subscribe - set to true to subscribe, set to false to unsubscribe
+	* @param string $reason
+	*/
+	protected function addEmailToList($emailAddress, $contactID, $listID, $subscribe = false, $reason = "")
+	{
+		$addedToList = false;
+
+		// Default values
 		$saveListSubscription = [
 			'list_id' 		 => $listID,
 			'contact_id' 	 => $contactID,
 			'tactic_id' 	 => static::EMAIL_TACTIC,
 			'model_class' 	 => 'Stella\Pulse\Model\Fragment\Email',
-			'subscribed'	 => 0,
-			'opt_out_reason' => $reason,
 		];
 
 
-		// Check to see if the email is already subscribed/unsubscribed
+		if($subscribe)
+		{
+			$saveListSubscription['subscribed'] = 1;
+		}
+		else
+		{
+			$saveListSubscription['subscribed'] 	= 0;
+			$saveListSubscription['opt_out_reason'] = $reason;
+		}
+
+		// Check to see if the email is already on list
 		if($pulseListSubscription = $this->isEmailOnList($listID, $emailAddress))
 		{
 
-			if($pulseListSubscription['subscribed'] == 1)
+			if($pulseListSubscription['subscribed'] != $saveListSubscription['subscribed'])
 			{
-				// Need to unsubscribe
+				// On list with oppsite status
 				$saveListSubscription['id'] 		= $pulseListSubscription['id'];
 				$saveListSubscription['model_id'] 	= $pulseListSubscription['model_id'];
 				$this->request('post', 'list_subscription', $saveListSubscription);
 				if(!$this->errors())
 				{
-					$unsubscribed = true;
+					$addedToList = true;
 				}
 			}
 			else
 			{
 				// Already unsubscribed
-				$unsubscribed = true;
+				$addedToList = true;
 			}
 
 		}
@@ -334,7 +345,7 @@ class PulseApi
 					$saveToList = $this->request('post', 'list_subscription', $saveListSubscription);
 					if(!$this->errors())
 					{
-						$unsubscribed = true;
+						$addedToList = true;
 					}
 				}
 
@@ -352,15 +363,27 @@ class PulseApi
 				$saveToList = $this->request('POST', 'list_subscription', $saveListSubscription);
 				if(!$this->errors())
 				{
-					$unsubscribed = true;
+					$addedToList = true;
 				}
 			}
 
 		}
 
 
-		return $unsubscribed;
+		return $addedToList;
 
+
+	}
+
+	public function subscribeEmail($emailAddress, $contactID, $listID)
+	{
+		return $this->addEmailToList($emailAddress, $contactID, $listID, true);
+	}
+
+
+	public function unsubscribeEmail($emailAddress, $contactID, $reason = "", $listID = 1)
+	{
+		return $this->addEmailToList($emailAddress, $contactID, $listID, false, $reason);
 	}
 
 	/**
