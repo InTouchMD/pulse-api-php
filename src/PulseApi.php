@@ -3,6 +3,18 @@ namespace PulseApi;
 
 class PulseApi
 {
+
+	const EMAIL_TACTIC 			= 1;
+	const DIRECT_MAIL_TACTIC 	= 2;
+	const FAX_TACTIC 			= 3;
+	const PHONE_TACTIC 			= 4;
+	const BANNER_TACTIC 		= 5;
+	const EHR_BANNER_TACTIC 	= 6;
+	const WEB_TACTIC 			= 7;
+	const EVENT_TACTIC 			= 8;
+	const SMS_TACTIC 			= 9;
+
+
 	protected
 		$apiURL = "{YOUR_URL_HERE}"
 		, $apiKey = "{YOUR_API_KEY_HERE}"
@@ -172,5 +184,175 @@ class PulseApi
 		}
 
 		return FALSE;
+	}
+
+
+	public function getContactByEmail($emailAddress, $withChildren = false)
+	{
+		$search = [
+			'field' 		=> 'Email.email_address',
+			'value' 		=> $emailAddress,
+			'search_type' 	=> 'text',
+			'match_type' 	=> 'is'
+		];
+
+
+		return $this->searchContactsByCondition($search, ['_children' => $withChildren]);
+	}
+
+
+	public function getEmail($emailAddress, $withChildren = false)
+	{
+		$args = [
+			'email_address' => $emailAddress,
+			'_children' 	=> $withChildren
+		];
+
+
+		$result = $this->request('GET', 'email', $args);
+		if(!$this->errors())
+		{
+			return reset($result);
+		}
+
+		return false;
+	}
+
+	public function isEmailOnList($listID, $emailAddress)
+	{
+
+		// Get pulse email ID
+		if($pulseEmail = $this->getEmail($emailAddress))
+		{
+
+			$method 	= "GET";
+			$endpoint 	= "list_subscription";
+			$args = [
+				'list_id' 		=> $listID,
+				'model_class' 	=> 'Stella\Pulse\Model\Fragment\Email',
+				'model_id' 		=> $pulseEmail['id'],
+				'contact_id'	=> $pulseEmail['contact_id']
+			];
+
+			$result = $this->request($method, $endpoint, $args);
+			if(!$this->errors())
+			{
+				return reset($result);
+			}
+		}
+		else
+		{
+			$this->errors[] = "Email not found in Pulse.";
+		}
+
+		return false;
+
+	}
+
+	public function unsubscribeEmail($emailAddress, $contactID, $reason = "", $listID = 1)
+	{
+		$unsubscribed = false;
+
+		// Default unsubscribe values
+		$saveListSubscription = [
+			'list_id' 		 => $listID,
+			'contact_id' 	 => $contactID,
+			'tactic_id' 	 => static::EMAIL_TACTIC,
+			'model_class' 	 => 'Stella\Pulse\Model\Fragment\Email',
+			'subscribed'	 => 0,
+			'opt_out_reason' => $reason,
+		];
+
+
+		// Check to see if the email is already subscribed/unsubscribed
+		if($pulseListSubscription = $this->isEmailOnList($listID, $emailAddress))
+		{
+
+			if($pulseListSubscription['subscribed'] == 1)
+			{
+				// Need to unsubscribe
+				$saveListSubscription['id'] 		= $pulseListSubscription['id'];
+				$saveListSubscription['model_id'] 	= $pulseListSubscription['model_id'];
+				$this->request('post', 'list_subscription', $saveListSubscription);
+				if(!$this->errors())
+				{
+					$unsubscribed = true;
+				}
+			}
+			else
+			{
+				// Already unsubscribed
+				$unsubscribed = true;
+			}
+
+		}
+		elseif($this->errors())
+		{
+
+			if(in_array("Email not found in Pulse.", $this->errors()))
+			{
+				// Email is not in Pulse
+
+				// Add it and then mark it unsubscribed
+				if($email = $this->saveEmail($emailAddress, $contactID))
+				{
+					$saveListSubscription['model_id'] = $email['id'];
+					$saveToList = $this->request('post', 'list_subscription', $saveListSubscription);
+					if(!$this->errors())
+					{
+						$unsubscribed = true;
+					}
+				}
+
+			}
+		}
+		else
+		{
+			// Email is in pulse
+
+			// Look up email in pulse
+			if($email = $this->getEmail($emailAddress))
+			{
+				$saveListSubscription['model_id'] = $email['id'];
+
+				$saveToList = $this->request('POST', 'list_subscription', $saveListSubscription);
+				if(!$this->errors())
+				{
+					$unsubscribed = true;
+				}
+			}
+
+		}
+
+
+		return $unsubscribed;
+
+	}
+
+	public function saveEmail($emailAddress, $contactID, $emailID = false)
+	{
+		$emailDomain = explode("@", $emailAddress);
+		if(count($emailDomain) == 2)
+		{
+			$args = [
+				'contact_id' 	=> $contactID,
+				'email_address' => $emailAddress,
+				'email_domain' 	=> $emailDomain[1]
+			];
+
+			if($emailID)
+			{
+				$args['id'] = $emailID;
+			}
+
+			$savedEmail = $this->request('post', 'email', $args);
+
+			if(!$this->errors())
+			{
+				return reset($savedEmail);
+			}
+		}
+
+		return false;
 	}
 }
