@@ -76,7 +76,7 @@ class PulseApi
 	*
 	* @param mixed $condition
 	*/
-	public function searchContactsByCondition($condition)
+	public function searchContactsByCondition($condition, $additionalArgs = [])
 	{
 		$args = [
 			'condition'    => $condition,
@@ -84,6 +84,12 @@ class PulseApi
 			'_unique'      => true,
 			'_dont_cache'  => true,
 		];
+
+		if($additionalArgs)
+		{
+			$args = array_merge($args, $additionalArgs);
+		}
+
 		return $this->request('GET', 'contact/searchByCustomCondition', $args);
 	}
 
