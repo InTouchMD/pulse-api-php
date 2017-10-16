@@ -425,4 +425,26 @@ class PulseApi
 		return $this->request('POST', $model, $args);
 	}
 
+	/**
+	* Adds tags to a contact
+	*
+	* @param mixed $contactID
+	* @param mixed $tags - A single tag or an array of tags.  Can be either tag IDs or tag names
+	* @param bool $resetTags - 	If set to true, this will delete any existing tags and replace with the tags given.
+	* 							If false, tags will only be appended
+	*/
+	public function tagContact($contactID, $tags, $resetTags = false)
+	{
+
+		$args = [
+			'id' 			=> $contactID,
+			'_tags' 		=> $tags,
+			'_reset_tags' 	=> $resetTags
+		];
+
+		$result = $this->save("contact/saveTags", $args);
+
+		return !$this->errors();
+	}
+
 }
