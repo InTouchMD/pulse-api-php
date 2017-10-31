@@ -14,6 +14,9 @@ class PulseApi
 	const EVENT_TACTIC 			= 8;
 	const SMS_TACTIC 			= 9;
 
+	const UNSUBSCRIBE			= 46;
+	const SUBSCRIBE				= 47;
+
 
 	protected
 		$apiURL = "{YOUR_URL_HERE}"
@@ -238,6 +241,22 @@ class PulseApi
 	/**
 	* Checks to see if an email address is on a specific list
 	*
+	* If found returns array with the following keys:
+	*
+	* 	id: list_subscription_id
+	* 	created: date subscription created
+	* 	deleted: 1 for deleted, 0 for not deleted
+	* 	list_id:
+	* 	contact_id:
+	* 	tactic_id:
+	* 	model_class:
+	* 	model_id:
+	* 	model_revision_id:
+	* 	subscribed: 1 for subscribed, 0 for unsubscribed
+	* 	opt_out_reason:
+	*
+	*
+	*
 	* @param mixed $listID
 	* @param mixed $emailAddress
 	*
@@ -261,7 +280,12 @@ class PulseApi
 			$result = $this->request($method, $endpoint, $args);
 			if(!$this->errors())
 			{
-				return reset($result);
+				$result	= reset($result);
+				if($result)
+				{
+					$result['model_revision_id'] = $pulseEmail['revision_id'];
+				}
+				return $result;
 			}
 		}
 		else
@@ -270,7 +294,6 @@ class PulseApi
 		}
 
 		return false;
-
 	}
 
 
@@ -290,6 +313,7 @@ class PulseApi
 	{
 		$addedToList = false;
 
+
 		// Default values
 		$saveListSubscription = [
 			'list_id' 		 => $listID,
@@ -298,6 +322,11 @@ class PulseApi
 			'model_class' 	 => 'Stella\Pulse\Model\Fragment\Email',
 		];
 
+		$saveAction = [
+			'action_code_id' 	=> ($subscribe) ? static::SUBSCRIBE : static::UNSUBSCRIBE,
+			'contact_id' 		=> $contactID,
+			'model_class'		=> 'Stella\Pulse\Model\Fragment\Email'
+		];
 
 		if($subscribe)
 		{
@@ -318,6 +347,11 @@ class PulseApi
 				// On list with oppsite status
 				$saveListSubscription['id'] 		= $pulseListSubscription['id'];
 				$saveListSubscription['model_id'] 	= $pulseListSubscription['model_id'];
+
+				$saveAction['model_id']				= $pulseListSubscription['model_id'];
+				$saveAction['model_revision_id']	= $pulseListSubscription['model_revision_id'];
+
+
 				$this->save('list_subscription', $saveListSubscription);
 				if(!$this->errors())
 				{
@@ -326,7 +360,7 @@ class PulseApi
 			}
 			else
 			{
-				// Already unsubscribed
+				// Already subscribed/unsubscribed
 				$addedToList = true;
 			}
 
@@ -341,7 +375,10 @@ class PulseApi
 				// Add it and then mark it unsubscribed
 				if($email = $this->saveEmail($emailAddress, $contactID))
 				{
-					$saveListSubscription['model_id'] = $email['id'];
+					$saveListSubscription['model_id'] 	= $email['id'];
+					$saveAction['model_id'] 			= $email['id'];
+					$saveAction['model_revision_id']	= $email['revision_id'];
+
 					$saveToList = $this->save('list_subscription', $saveListSubscription);
 					if(!$this->errors())
 					{
@@ -358,7 +395,9 @@ class PulseApi
 			// Look up email in pulse
 			if($email = $this->getEmail($emailAddress))
 			{
-				$saveListSubscription['model_id'] = $email['id'];
+				$saveListSubscription['model_id'] 	= $email['id'];
+				$saveAction['model_id'] 			= $email['id'];
+				$saveAction['model_revision_id']	= $email['revision_id'];
 
 				$saveToList = $this->save('list_subscription', $saveListSubscription);
 				if(!$this->errors())
@@ -369,6 +408,12 @@ class PulseApi
 
 		}
 
+
+		if($addedToList && isset($saveAction['model_id']))
+		{
+			// Add unsubscribe/subscribe action
+			$this->save('actions', $saveAction);
+		}
 
 		return $addedToList;
 
