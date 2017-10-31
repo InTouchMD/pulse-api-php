@@ -316,43 +316,29 @@ class PulseApi
 
 		// Default values
 		$saveListSubscription = [
-			'list_id' 		 => $listID,
-			'contact_id' 	 => $contactID,
-			'tactic_id' 	 => static::EMAIL_TACTIC,
-			'model_class' 	 => 'Stella\Pulse\Model\Fragment\Email',
-		];
-
-		$saveAction = [
-			'action_code_id' 	=> ($subscribe) ? static::SUBSCRIBE : static::UNSUBSCRIBE,
-			'contact_id' 		=> $contactID,
-			'model_class'		=> 'Stella\Pulse\Model\Fragment\Email'
+			'list_id' => [$listID]
 		];
 
 		if($subscribe)
 		{
-			$saveListSubscription['subscribed'] = 1;
+			$subscribeValue = 1;
+			$apiMethod 		= "subscribe";
 		}
 		else
 		{
-			$saveListSubscription['subscribed'] 	= 0;
+			$subscribeValue 						= 0;
 			$saveListSubscription['opt_out_reason'] = $reason;
+			$apiMethod 								= "unsubscribe";
 		}
 
 		// Check to see if the email is already on list
 		if($pulseListSubscription = $this->isEmailOnList($listID, $emailAddress))
 		{
 
-			if($pulseListSubscription['subscribed'] != $saveListSubscription['subscribed'])
+			if($pulseListSubscription['subscribed'] != $subscribeValue)
 			{
 				// On list with oppsite status
-				$saveListSubscription['id'] 		= $pulseListSubscription['id'];
-				$saveListSubscription['model_id'] 	= $pulseListSubscription['model_id'];
-
-				$saveAction['model_id']				= $pulseListSubscription['model_id'];
-				$saveAction['model_revision_id']	= $pulseListSubscription['model_revision_id'];
-
-
-				$this->save('list_subscription', $saveListSubscription);
+				$this->get('email/'.$pulseListSubscription['model_id'].'/'.$apiMethod, $saveListSubscription);
 				if(!$this->errors())
 				{
 					$addedToList = true;
@@ -372,14 +358,10 @@ class PulseApi
 			{
 				// Email is not in Pulse
 
-				// Add it and then mark it unsubscribed
+				// Add it and then mark it subscribed/unsubscribed
 				if($email = $this->saveEmail($emailAddress, $contactID))
 				{
-					$saveListSubscription['model_id'] 	= $email['id'];
-					$saveAction['model_id'] 			= $email['id'];
-					$saveAction['model_revision_id']	= $email['revision_id'];
-
-					$saveToList = $this->save('list_subscription', $saveListSubscription);
+					$this->get('email/'.$email['id'].'/'.$apiMethod, $saveListSubscription);
 					if(!$this->errors())
 					{
 						$addedToList = true;
@@ -395,24 +377,13 @@ class PulseApi
 			// Look up email in pulse
 			if($email = $this->getEmail($emailAddress))
 			{
-				$saveListSubscription['model_id'] 	= $email['id'];
-				$saveAction['model_id'] 			= $email['id'];
-				$saveAction['model_revision_id']	= $email['revision_id'];
-
-				$saveToList = $this->save('list_subscription', $saveListSubscription);
+				$this->get('email/'.$email['id'].'/'.$apiMethod, $saveListSubscription);
 				if(!$this->errors())
 				{
 					$addedToList = true;
 				}
 			}
 
-		}
-
-
-		if($addedToList && isset($saveAction['model_id']))
-		{
-			// Add unsubscribe/subscribe action
-			$this->save('actions', $saveAction);
 		}
 
 		return $addedToList;
@@ -468,6 +439,11 @@ class PulseApi
 	public function save($model, $args)
 	{
 		return $this->request('POST', $model, $args);
+	}
+
+	public function get($model, $args = [])
+	{
+		return $this->request('GET', $model, $args);
 	}
 
 	/**
