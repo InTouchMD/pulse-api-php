@@ -266,7 +266,7 @@ class PulseApi
 		}
 		else
 		{
-			$this->errors[] = "Email not found in Pulse.";
+			$this->errors = "Email not found in Pulse.";
 		}
 
 		return false;
