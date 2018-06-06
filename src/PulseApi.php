@@ -130,7 +130,7 @@ class PulseApi
 
 	public function errors()
 	{
-		return $this->errors;
+		return !is_array($this->errors) ? [$this->errors] : $this->errors;
 	}
 
 	protected function request($method, $endpoint, $args = [])
