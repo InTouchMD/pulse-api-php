@@ -108,11 +108,11 @@ class PulseApi
 		}
 		if($phones)
 		{
-			$args['children']['phones'] = $phones;
+			$args['children']['phone'] = $phones;
 		}
 		if($faxes)
 		{
-			$args['children']['faxes'] = $faxes;
+			$args['children']['fax'] = $faxes;
 		}
 
 		return $this->request('POST', 'contact/saveFull', $args);
